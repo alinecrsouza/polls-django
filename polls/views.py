@@ -2,6 +2,7 @@ from django.shortcuts import get_object_or_404, render
 from django.http import HttpResponseRedirect, HttpResponse
 from django.urls import reverse
 from django.template import loader
+from django.db.models import F
 
 from .models import Choice, Question
 
@@ -61,7 +62,14 @@ def vote(request, question_id):
             'error_message': "You didn't select a choice.",
         })
     else:
-        selected_choice.votes += 1
+        # If two users of your website try to vote at exactly the same time, this might go wrong:
+        # The same value, let’s say 42, will be retrieved for votes. Then, for both users the new value of 43 is
+        # computed and saved, but 44 would be the expected value. This is called a race condition.
+        # selected_choice.votes += 1
+
+        # Avoiding race conditions using F
+        selected_choice.votes = F('votes') + 1
+
         selected_choice.save()
         # Always return an HttpResponseRedirect after successfully dealing
         # with POST data. This prevents data from being posted twice if a
